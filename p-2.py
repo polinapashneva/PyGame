@@ -2,6 +2,7 @@ import os
 import sys
 import pygame
 #hjmfg
+# fgdghjkl;lk
 FPS = 50
 MONEY = 0
 PROMO = [['12345', 10, 0]]
