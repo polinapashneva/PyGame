@@ -1,8 +1,8 @@
 import os
 import sys
 import pygame
-#hjmfg
-# fgdghjkl;lk
+
+
 FPS = 50
 MONEY = 0
 PROMO = [['12345', 10, 0]]
@@ -158,7 +158,7 @@ def promo():
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN: # Заканчиваем ввод промокода
                 for i in PROMO:
-                    if i[0] == pc and i[-1] == 0:
+                    if i[0] == pc and i[-1] == 0: # если промокод введен верно, увеличиваем число монет
                         MONEY += int(i[1])
                         PROMO[PROMO.index(i)][-1] = 1
                     zast()
