@@ -174,7 +174,7 @@ def promo():
         clock.tick(FPS)
 
 
-class Stolb(pygame.sprite.Sprite):
+class Stolb(pygame.sprite.Sprite): # создаем столбы
     def __init__(self, pos, b, r):
         super().__init__(tiles_group, all_sprites)
         mr = {'m': 2,
