@@ -1,6 +1,7 @@
 import os
 import sys
 import pygame
+import sqlite3
 
 
 FPS = 50
@@ -157,11 +158,18 @@ def promo():
     while True:
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN: # Заканчиваем ввод промокода
-                for i in PROMO:
-                    if i[0] == pc and i[-1] == 0: # если промокод введен верно, увеличиваем число монет
-                        MONEY += int(i[1])
-                        PROMO[PROMO.index(i)][-1] = 1
-                    zast()
+                try:
+                    bd = sqlite3.connect("промокод.sqlite")
+                    cur = bd.cursor("промокод.sqlite")
+                    result = cur.execute(f"""SELECT * FROM код WHERE Код={pc}""").fetchone()
+                    if result[-1] == '0':
+                        MONEY += result[1]
+                        cur.execute(f'''UPDATE код SET применения = 1 WHERE Код={pc}''')
+                        bd.commit()
+                    bd.close()
+                except:
+                    pass
+                zast()
             elif event.type == pygame.KEYDOWN: # Показываем ввод с клавиатуры в нашем окне
                 pc = pc + str(event.unicode)
                 font = pygame.font.SysFont(None, 30)
