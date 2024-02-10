@@ -161,10 +161,10 @@ def promo():
                 try:
                     bd = sqlite3.connect("промокод.sqlite")
                     cur = bd.cursor("промокод.sqlite")
-                    result = cur.execute(f"""SELECT * FROM код WHERE Код={pc}""").fetchone()
+                    result = cur.execute(f"""SELECT * FROM код WHERE Код = {pc}""").fetchone()
                     if result[-1] == '0':
                         MONEY += result[1]
-                        cur.execute(f'''UPDATE код SET применения = 1 WHERE Код={pc}''')
+                        cur.execute(f'''UPDATE код SET применения = 1 WHERE Код = {pc}''')
                         bd.commit()
                     bd.close()
                 except:
