@@ -10,6 +10,7 @@ PROMO = [['12345', 10, 0]]
 LEVEL = 1
 KH = 0
 Z = 0
+XC = 0
 
 
 def load_image(name, color_key=None):
@@ -203,10 +204,22 @@ class Tile(pygame.sprite.Sprite):
 
 class Coins(pygame.sprite.Sprite):
     def __init__(self, x, y):
-        super().__init__(money_group, all_sprites)
-        self.image = pygame.transform.scale(load_image('монета.png'), (KH - 30, KH - 30))
-        self.image.set_colorkey((255, 255, 255))
+        super().__init__()
+        self.index = 0
+        self.im = load_image('монетки.png')
+        self.imx = self.im.size.y
+        self.image = pygame.Surface(self.imx, self.imx)
+        self.image.blit(self.im, (0, 0), (self.imx * self.index, 0, self.imx * (self.index + 1), self.imx))
         self.rect = self.image.get_rect().move(x, y)
+
+    def update(self):
+        self.index += 1
+
+        if self.index >= 5:
+            self.index = 0
+        self.image = pygame.Surface(self.imx, self.imx)
+        self.image.blit(self.im, (0, 0), (self.imx * self.index, 0, self.imx * (self.index + 1), self.imx))
+        self.rect = self.image.get_rect()
 
 
 class Zem(pygame.sprite.Sprite):
@@ -262,7 +275,7 @@ charrunl_group = pygame.sprite.Group()
 
 
 def generate_level_1():
-    global KH, Z
+    global KH, Z, XC
     new_player = None
     if WIDTH <= 5356:
         m = round(5356 / WIDTH / 3)
@@ -274,6 +287,7 @@ def generate_level_1():
     kh = round((HEIGHT - z) / 7) + 20
     KH = kh
     xc = round(WIDTH / 10)
+    XC = xc
     crd = [(xc, kh * 5), (xc * 2, kh * 4), (xc * 3, kh * 3), (xc * 5, kh * 3), (xc * 6, kh * 2), (xc * 7, kh),
            (xc * 7, kh * 5), (xc * 8, kh * 4), (xc * 9, kh * 3), (xc * 10, kh * 2), (xc * 10, kh * 5),
            (xc * 11, kh * 4), (xc * 13, kh * 3), (xc * 16, kh * 5), (xc * 16, kh * 3),
@@ -286,9 +300,6 @@ def generate_level_1():
            (xc * 21, kh * 3, 's'), ]
     for i in crd:
         Stolb(i[0:-1], kh, i[-1])
-    crd = [(xc * 5 + 45, kh * 5 + 30), (xc * 10 + 15, kh + 15), (xc * 19 + 15, kh * 5 + 30)]
-    for i in crd:
-        Coins(i[0], i[1])
     new_player = Player(xc, kh, z)
     runp = Prun(xc, kh, z)
     runpl = Prunl(xc, kh, z)
@@ -347,6 +358,7 @@ try:
     lor = 1
     cor = [70, HEIGHT - KH + 50 - Z]
     cor = [WIDTH // 2, HEIGHT - KH + 50 - Z]
+    corc = [(XC * 5 + 45, KH * 5 + 30), (XC * 10 + 15, KH + 15), (XC * 19 + 15, KH * 5 + 30)]
     while running:
         player = char[0]
         lor = 0
@@ -420,7 +432,12 @@ try:
         screen.fill((0, 0, 0))
         fon_group.draw(screen)
         tiles_group.draw(screen)
-        money_group.draw(screen)
+        # money_group.draw(screen)
+        money_group = pygame.sprite.Group()
+        for i in range(3):
+            animated_sprite = Coins(corc[i])
+            money_group.add(animated_sprite)
+        money_group.update()
         if player == char[0]:
             char_group.draw(screen)
         elif player == char[1]:
