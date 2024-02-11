@@ -11,6 +11,7 @@ LEVEL = 1
 KH = 0
 Z = 0
 XC = 0
+CORP = []
 
 
 def load_image(name, color_key=None):
@@ -332,7 +333,9 @@ def up():
 
 def mcoin():
     if pygame.sprite.spritecollideany(player, money_group):
-        pygame.sprite.spritecollideany(player, money_group).kill()
+        for i in CORC:
+            if pygame.sprite.spritecollideany(player, money_group).pos.x == i[0]:
+                del CORC[CORC.index(i)]
 
 
 try:
@@ -358,7 +361,7 @@ try:
     lor = 1
     cor = [70, HEIGHT - KH + 50 - Z]
     cor = [WIDTH // 2, HEIGHT - KH + 50 - Z]
-    corc = [(XC * 5 + 45, KH * 5 + 30), (XC * 10 + 15, KH + 15), (XC * 19 + 15, KH * 5 + 30)]
+    CORC = [(XC * 5 + 45, KH * 5 + 30), (XC * 10 + 15, KH + 15), (XC * 19 + 15, KH * 5 + 30)]
     while running:
         player = char[0]
         lor = 0
@@ -435,7 +438,7 @@ try:
         # money_group.draw(screen)
         money_group = pygame.sprite.Group()
         for i in range(3):
-            animated_sprite = Coins(corc[i])
+            animated_sprite = Coins(CORC[i])
             money_group.add(animated_sprite)
         money_group.update()
         if player == char[0]:
