@@ -1,14 +1,16 @@
 import os
 import sys
 import pygame
+import sqlite3
 
 
 FPS = 50
 MONEY = 0
-PROMO = [['12345', 10, 0]]
 LEVEL = 1
 KH = 0
 Z = 0
+XC = 0
+CORP = []
 
 
 def load_image(name, color_key=None):
@@ -157,11 +159,18 @@ def promo():
     while True:
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN: # Заканчиваем ввод промокода
-                for i in PROMO:
-                    if i[0] == pc and i[-1] == 0: # если промокод введен верно, увеличиваем число монет
-                        MONEY += int(i[1])
-                        PROMO[PROMO.index(i)][-1] = 1
-                    zast()
+                try:
+                    bd = sqlite3.connect("промокод.sqlite")
+                    cur = bd.cursor("промокод.sqlite")
+                    result = cur.execute(f"""SELECT * FROM код WHERE Код = {pc}""").fetchone()
+                    if result[-1] == '0':
+                        MONEY += result[1]
+                        cur.execute(f'''UPDATE код SET применения = 1 WHERE Код = {pc}''')
+                        bd.commit()
+                    bd.close()
+                except:
+                    pass
+                zast()
             elif event.type == pygame.KEYDOWN: # Показываем ввод с клавиатуры в нашем окне
                 pc = pc + str(event.unicode)
                 font = pygame.font.SysFont(None, 30)
@@ -195,10 +204,21 @@ class Tile(pygame.sprite.Sprite):
 
 class Coins(pygame.sprite.Sprite):
     def __init__(self, x, y):
-        super().__init__(money_group, all_sprites)
-        self.image = pygame.transform.scale(load_image('монета.png'), (KH - 30, KH - 30))
-        self.image.set_colorkey((255, 255, 255))
+        super().__init__()
+        self.index = 0
+        self.im = load_image('монетки.png')
+        self.imx = self.im.get_size()[0]
+        self.image = pygame.Surface((self.imx, self.imx))
+        self.image.blit(self.im, (0, 0), (self.imx * self.index, 0, self.imx * (self.index + 1), self.imx))
         self.rect = self.image.get_rect().move(x, y)
+
+    def update(self):
+        self.index += 1
+        if self.index >= 5:
+            self.index = 0
+        self.image = pygame.Surface((self.imx, self.imx))
+        self.image.blit(self.im, (0, 0), (self.imx * self.index, 0, self.imx * (self.index + 1), self.imx))
+        self.rect = self.image.get_rect()
 
 
 class Zem(pygame.sprite.Sprite):
@@ -254,7 +274,7 @@ charrunl_group = pygame.sprite.Group()
 
 
 def generate_level_1():
-    global KH, Z
+    global KH, Z, XC
     new_player = None
     if WIDTH <= 5356:
         m = round(5356 / WIDTH / 3)
@@ -266,6 +286,7 @@ def generate_level_1():
     kh = round((HEIGHT - z) / 7) + 20
     KH = kh
     xc = round(WIDTH / 10)
+    XC = xc
     crd = [(xc, kh * 5), (xc * 2, kh * 4), (xc * 3, kh * 3), (xc * 5, kh * 3), (xc * 6, kh * 2), (xc * 7, kh),
            (xc * 7, kh * 5), (xc * 8, kh * 4), (xc * 9, kh * 3), (xc * 10, kh * 2), (xc * 10, kh * 5),
            (xc * 11, kh * 4), (xc * 13, kh * 3), (xc * 16, kh * 5), (xc * 16, kh * 3),
@@ -278,9 +299,6 @@ def generate_level_1():
            (xc * 21, kh * 3, 's'), ]
     for i in crd:
         Stolb(i[0:-1], kh, i[-1])
-    crd = [(xc * 5 + 45, kh * 5 + 30), (xc * 10 + 15, kh + 15), (xc * 19 + 15, kh * 5 + 30)]
-    for i in crd:
-        Coins(i[0], i[1])
     new_player = Player(xc, kh, z)
     runp = Prun(xc, kh, z)
     runpl = Prunl(xc, kh, z)
@@ -293,7 +311,7 @@ def generate_level_1():
 class Camera:
     # зададим начальный сдвиг камеры
     def __init__(self):
-        self.dx = 0
+        self.dx = - WIDTH // 2
         self.dy = 0
 
     # сдвинуть объект obj на смещение камеры
@@ -305,6 +323,9 @@ class Camera:
     def update(self, target):
         self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
 
+    def sb(self, s):
+        self.dx = - WIDTH // 2 - s
+
 
 def up():
     if pygame.sprite.spritecollideany(player, plat_group):
@@ -313,7 +334,9 @@ def up():
 
 def mcoin():
     if pygame.sprite.spritecollideany(player, money_group):
-        pygame.sprite.spritecollideany(player, money_group).kill()
+        for i in CORC:
+            if pygame.sprite.spritecollideany(player, money_group).pos.x == i[0]:
+                del CORC[CORC.index(i)]
 
 
 try:
@@ -339,6 +362,7 @@ try:
     lor = 1
     cor = [70, HEIGHT - KH + 50 - Z]
     cor = [WIDTH // 2, HEIGHT - KH + 50 - Z]
+    CORC = [(XC * 5 + 45, KH * 5 + 30), (XC * 10 + 15, KH + 15), (XC * 19 + 15, KH * 5 + 30)]
     while running:
         player = char[0]
         lor = 0
@@ -373,6 +397,10 @@ try:
                 if 60 <= event.pos[0] <= 120 and 60 <= event.pos[1] <= 120:
                     player.rect.x -= s
                     s = 0
+                    for i in all_sprites:
+                        i.kill()
+                    *char, level_x, level_y, fon, zem = generate_level_1()
+                    Camera()
         if r:
             player = char[lor]
             p += 1
@@ -404,15 +432,22 @@ try:
 
 
         # изменяем ракурс камеры
-        camera.update(player)
-        # обновляем положение всех спрайтов
-        for sprite in all_sprites:
-            camera.apply(sprite)
+        if s + XC - player.rect.w // 2 - WIDTH // 2 > 0 and s + WIDTH // 2 + player.rect.w // 2 < WIDTH * 3:
+            camera.update(player)
+            # обновляем положение всех спрайтов
+            for sprite in all_sprites:
+                camera.apply(sprite)
 
         screen.fill((0, 0, 0))
         fon_group.draw(screen)
         tiles_group.draw(screen)
-        money_group.draw(screen)
+        # # money_group.draw(screen)
+        # money_group = pygame.sprite.Group()
+        # for i in range(3):
+        #     animated_sprite = Coins(CORC[i][0], CORC[i][1])
+        #     money_group.add(animated_sprite)
+        # money_group.update()
+        # money_group.draw(screen)
         if player == char[0]:
             char_group.draw(screen)
         elif player == char[1]:
