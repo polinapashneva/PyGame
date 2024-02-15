@@ -204,21 +204,10 @@ class Tile(pygame.sprite.Sprite):
 
 class Coins(pygame.sprite.Sprite):
     def __init__(self, x, y):
-        super().__init__()
-        self.index = 0
-        self.im = load_image('монетки.png')
-        self.imx = self.im.get_size()[0]
-        self.image = pygame.Surface((self.imx, self.imx))
-        self.image.blit(self.im, (0, 0), (self.imx * self.index, 0, self.imx * (self.index + 1), self.imx))
+        super().__init__(money_group, all_sprites)
+        self.image = pygame.transform.scale(load_image('монета.png'), (KH - 30, KH - 30))
+        self.image.set_colorkey((255, 255, 255))
         self.rect = self.image.get_rect().move(x, y)
-
-    def update(self):
-        self.index += 1
-        if self.index >= 5:
-            self.index = 0
-        self.image = pygame.Surface((self.imx, self.imx))
-        self.image.blit(self.im, (0, 0), (self.imx * self.index, 0, self.imx * (self.index + 1), self.imx))
-        self.rect = self.image.get_rect()
 
 
 class Zem(pygame.sprite.Sprite):
@@ -229,27 +218,27 @@ class Zem(pygame.sprite.Sprite):
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, w, h, z):
+    def __init__(self, w, h):
         super().__init__(char_group, all_sprites)
         self.image = pygame.transform.scale(load_image('челик стоит.png'), (w - 55, h - 40))
         self.image.set_colorkey((255, 255, 255))
-        self.rect = self.image.get_rect().move(70, HEIGHT - h + 50 - z)
+        self.rect = self.image.get_rect().move(70, HEIGHT - h + 50 - Z)
 
 
 class Prun(pygame.sprite.Sprite):
-    def __init__(self, w, h, z):
+    def __init__(self, w, h):
         super().__init__(charrun_group, all_sprites)
         self.image = pygame.transform.scale(load_image('челик бежит.png'), (w - 55, h - 40))
         self.image.set_colorkey((255, 255, 255))
-        self.rect = self.image.get_rect().move(70, HEIGHT - h + 50 - z)
+        self.rect = self.image.get_rect().move(70, HEIGHT - h + 50 - Z)
 
 
 class Prunl(pygame.sprite.Sprite):
-    def __init__(self, w, h, z):
+    def __init__(self, w, h):
         super().__init__(charrunl_group, all_sprites)
         self.image = pygame.transform.scale(load_image('челик бежит-2.png'), (w - 55, h - 40))
         self.image.set_colorkey((255, 255, 255))
-        self.rect = self.image.get_rect().move(70, HEIGHT - h + 50 - z)
+        self.rect = self.image.get_rect().move(70, HEIGHT - h + 50 - Z)
 
 
 class Fon(pygame.sprite.Sprite):
@@ -259,6 +248,14 @@ class Fon(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(0, 0)
         pygame.display.flip()
         clock.tick(FPS)
+
+
+class Man(pygame.sprite.Sprite):
+    def __init__(self, x, h):
+        super().__init__(man_group, all_sprites)
+        self.image = pygame.transform.scale(load_image('Джей.png'), (x - 70, h - 60))
+        self.image.set_colorkey((255, 255, 255))
+        self.rect = self.image.get_rect().move(WIDTH * 3 - WIDTH // 2, HEIGHT - Z - h + 80)
 
 
 # группы спрайтов
@@ -271,6 +268,7 @@ plat_group = pygame.sprite.Group()
 money_group = pygame.sprite.Group()
 zem_group = pygame.sprite.Group()
 charrunl_group = pygame.sprite.Group()
+man_group = pygame.sprite.Group()
 
 
 def generate_level_1():
@@ -299,13 +297,17 @@ def generate_level_1():
            (xc * 21, kh * 3, 's'), ]
     for i in crd:
         Stolb(i[0:-1], kh, i[-1])
-    new_player = Player(xc, kh, z)
-    runp = Prun(xc, kh, z)
-    runpl = Prunl(xc, kh, z)
-    fon = Fon(WIDTH * 3)
-    zem = Zem()
+    crd = [(XC * 5 + 45, KH * 5 + 30), (XC * 10 + 15, KH + 15), (XC * 19 + 15, KH * 5 + 30)]
+    for i in crd:
+        Coins(i[0], i[1])
+    new_player = Player(xc, kh)
+    runp = Prun(xc, kh)
+    runpl = Prunl(xc, kh)
+    Man(xc, kh)
+    Fon(WIDTH * 3)
+    Zem()
     # вернем игрока, а также размер поля в клетках
-    return new_player, runp, runpl, WIDTH, HEIGHT, fon, zem
+    return new_player, runp, runpl, WIDTH, HEIGHT
 
 
 class Camera:
@@ -334,9 +336,7 @@ def up():
 
 def mcoin():
     if pygame.sprite.spritecollideany(player, money_group):
-        for i in CORC:
-            if pygame.sprite.spritecollideany(player, money_group).pos.x == i[0]:
-                del CORC[CORC.index(i)]
+        pygame.sprite.spritecollideany(player, money_group).kill()
 
 
 try:
@@ -352,7 +352,7 @@ try:
 
     start_screen()
     zast()
-    *char, level_x, level_y, fon, zem = generate_level_1()
+    *char, level_x, level_y = generate_level_1()
     camera = Camera()
     running = True
 
@@ -360,9 +360,9 @@ try:
     s = 0
     r = False
     lor = 1
+    mp = 0
     cor = [70, HEIGHT - KH + 50 - Z]
     cor = [WIDTH // 2, HEIGHT - KH + 50 - Z]
-    CORC = [(XC * 5 + 45, KH * 5 + 30), (XC * 10 + 15, KH + 15), (XC * 19 + 15, KH * 5 + 30)]
     while running:
         player = char[0]
         lor = 0
@@ -395,11 +395,13 @@ try:
                     r = True
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if 60 <= event.pos[0] <= 120 and 60 <= event.pos[1] <= 120:
-                    player.rect.x -= s
+                    player.rect.x = 70
+                    camera.update(player)
+                    mp = 0
                     s = 0
                     for i in all_sprites:
                         i.kill()
-                    *char, level_x, level_y, fon, zem = generate_level_1()
+                    *char, level_x, level_y = generate_level_1()
                     Camera()
         if r:
             player = char[lor]
@@ -423,8 +425,11 @@ try:
             except Exception as ex:
                 pass
         if pygame.sprite.spritecollideany(player, money_group):
-            MONEY += 5
+            mp += 1
             mcoin()
+
+        if pygame.sprite.spritecollideany(player, man_group):
+            running = False
 
         cor = [player.rect.x, player.rect.y]
         for i in range(3):
@@ -432,7 +437,7 @@ try:
 
 
         # изменяем ракурс камеры
-        if s + XC - player.rect.w // 2 - WIDTH // 2 > 0 and s + WIDTH // 2 + player.rect.w // 2 < WIDTH * 3:
+        if s + XC - player.rect.w // 2 - WIDTH // 2 > 0 and s + WIDTH // 2 + player.rect.w // 2 < WIDTH * 3 - 70:
             camera.update(player)
             # обновляем положение всех спрайтов
             for sprite in all_sprites:
@@ -441,13 +446,8 @@ try:
         screen.fill((0, 0, 0))
         fon_group.draw(screen)
         tiles_group.draw(screen)
-        # # money_group.draw(screen)
-        # money_group = pygame.sprite.Group()
-        # for i in range(3):
-        #     animated_sprite = Coins(CORC[i][0], CORC[i][1])
-        #     money_group.add(animated_sprite)
-        # money_group.update()
-        # money_group.draw(screen)
+        money_group.draw(screen)
+        man_group.draw(screen)
         if player == char[0]:
             char_group.draw(screen)
         elif player == char[1]:
@@ -466,7 +466,33 @@ try:
 
         pygame.display.flip()
         clock.tick(fps)
-
+    running = True
+    rep = [(0, "Джей", "*Бубнит какую-то тарабарщину*"), (0, "Пасси", "~Что это с ним?~"),
+           (0, "Пасси", "Что мне делать?", "Окликнуть", "Пройти мимо"), (1, "Пасси", "Папа? Ты в порядке?"),
+           (1, "Джей", "*Вздрогнул*"), (1, "Джей", "Да, Пасси, не беспокойся. Ступай, я догоню."),
+           (2, "Пасси", "*Пожала плечами*")]
+    nr = -1
+    vb = 0
+    p = [0]
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN or nr == -1:
+                fon_group.draw(screen)
+                tiles_group.draw(screen)
+                nr += 1
+                if rep[nr][0] in p:
+                    if rep[nr][1] == "Джей":
+                        pers = pygame.transform.scale(load_image('Джей1-2.png'), (WIDTH // 4, HEIGHT // 8 * 6))
+                        pers.set_colorkey((255, 255, 255))
+                        screen.blit(pers, (WIDTH // 3 * 2, HEIGHT // 8 * 2))
+                    else:
+                        pass
+                    if len(rep[nr]) == 3:
+                        pass
+                    else:
+                        pass
+            pygame.display.flip()
+            clock.tick(FPS)
     pygame.quit()
 except:
     print('Error')
