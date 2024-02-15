@@ -1,16 +1,14 @@
 import os
 import sys
 import pygame
-import sqlite3
 
 
 FPS = 50
 MONEY = 0
+PROMO = [['12345', 10, 0]]
 LEVEL = 1
 KH = 0
 Z = 0
-XC = 0
-CORP = []
 
 
 def load_image(name, color_key=None):
@@ -159,18 +157,11 @@ def promo():
     while True:
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN: # Заканчиваем ввод промокода
-                try:
-                    bd = sqlite3.connect("промокод.sqlite")
-                    cur = bd.cursor("промокод.sqlite")
-                    result = cur.execute(f"""SELECT * FROM код WHERE Код = {pc}""").fetchone()
-                    if result[-1] == '0':
-                        MONEY += result[1]
-                        cur.execute(f'''UPDATE код SET применения = 1 WHERE Код = {pc}''')
-                        bd.commit()
-                    bd.close()
-                except:
-                    pass
-                zast()
+                for i in PROMO:
+                    if i[0] == pc and i[-1] == 0: # если промокод введен верно, увеличиваем число монет
+                        MONEY += int(i[1])
+                        PROMO[PROMO.index(i)][-1] = 1
+                    zast()
             elif event.type == pygame.KEYDOWN: # Показываем ввод с клавиатуры в нашем окне
                 pc = pc + str(event.unicode)
                 font = pygame.font.SysFont(None, 30)
@@ -218,27 +209,27 @@ class Zem(pygame.sprite.Sprite):
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, w, h):
+    def __init__(self, w, h, z):
         super().__init__(char_group, all_sprites)
         self.image = pygame.transform.scale(load_image('челик стоит.png'), (w - 55, h - 40))
         self.image.set_colorkey((255, 255, 255))
-        self.rect = self.image.get_rect().move(70, HEIGHT - h + 50 - Z)
+        self.rect = self.image.get_rect().move(70, HEIGHT - h + 50 - z)
 
 
 class Prun(pygame.sprite.Sprite):
-    def __init__(self, w, h):
+    def __init__(self, w, h, z):
         super().__init__(charrun_group, all_sprites)
         self.image = pygame.transform.scale(load_image('челик бежит.png'), (w - 55, h - 40))
         self.image.set_colorkey((255, 255, 255))
-        self.rect = self.image.get_rect().move(70, HEIGHT - h + 50 - Z)
+        self.rect = self.image.get_rect().move(70, HEIGHT - h + 50 - z)
 
 
 class Prunl(pygame.sprite.Sprite):
-    def __init__(self, w, h):
+    def __init__(self, w, h, z):
         super().__init__(charrunl_group, all_sprites)
         self.image = pygame.transform.scale(load_image('челик бежит-2.png'), (w - 55, h - 40))
         self.image.set_colorkey((255, 255, 255))
-        self.rect = self.image.get_rect().move(70, HEIGHT - h + 50 - Z)
+        self.rect = self.image.get_rect().move(70, HEIGHT - h + 50 - z)
 
 
 class Fon(pygame.sprite.Sprite):
@@ -248,14 +239,6 @@ class Fon(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(0, 0)
         pygame.display.flip()
         clock.tick(FPS)
-
-
-class Man(pygame.sprite.Sprite):
-    def __init__(self, x, h):
-        super().__init__(man_group, all_sprites)
-        self.image = pygame.transform.scale(load_image('Джей.png'), (x - 70, h - 60))
-        self.image.set_colorkey((255, 255, 255))
-        self.rect = self.image.get_rect().move(WIDTH * 3 - WIDTH // 2, HEIGHT - Z - h + 80)
 
 
 # группы спрайтов
@@ -268,11 +251,10 @@ plat_group = pygame.sprite.Group()
 money_group = pygame.sprite.Group()
 zem_group = pygame.sprite.Group()
 charrunl_group = pygame.sprite.Group()
-man_group = pygame.sprite.Group()
 
 
 def generate_level_1():
-    global KH, Z, XC
+    global KH, Z
     new_player = None
     if WIDTH <= 5356:
         m = round(5356 / WIDTH / 3)
@@ -284,7 +266,6 @@ def generate_level_1():
     kh = round((HEIGHT - z) / 7) + 20
     KH = kh
     xc = round(WIDTH / 10)
-    XC = xc
     crd = [(xc, kh * 5), (xc * 2, kh * 4), (xc * 3, kh * 3), (xc * 5, kh * 3), (xc * 6, kh * 2), (xc * 7, kh),
            (xc * 7, kh * 5), (xc * 8, kh * 4), (xc * 9, kh * 3), (xc * 10, kh * 2), (xc * 10, kh * 5),
            (xc * 11, kh * 4), (xc * 13, kh * 3), (xc * 16, kh * 5), (xc * 16, kh * 3),
@@ -297,23 +278,22 @@ def generate_level_1():
            (xc * 21, kh * 3, 's'), ]
     for i in crd:
         Stolb(i[0:-1], kh, i[-1])
-    crd = [(XC * 5 + 45, KH * 5 + 30), (XC * 10 + 15, KH + 15), (XC * 19 + 15, KH * 5 + 30)]
+    crd = [(xc * 5 + 45, kh * 5 + 30), (xc * 10 + 15, kh + 15), (xc * 19 + 15, kh * 5 + 30)]
     for i in crd:
         Coins(i[0], i[1])
-    new_player = Player(xc, kh)
-    runp = Prun(xc, kh)
-    runpl = Prunl(xc, kh)
-    Man(xc, kh)
-    Fon(WIDTH * 3)
-    Zem()
+    new_player = Player(xc, kh, z)
+    runp = Prun(xc, kh, z)
+    runpl = Prunl(xc, kh, z)
+    fon = Fon(WIDTH * 3)
+    zem = Zem()
     # вернем игрока, а также размер поля в клетках
-    return new_player, runp, runpl, WIDTH, HEIGHT
+    return new_player, runp, runpl, WIDTH, HEIGHT, fon, zem
 
 
 class Camera:
     # зададим начальный сдвиг камеры
     def __init__(self):
-        self.dx = - WIDTH // 2
+        self.dx = 0
         self.dy = 0
 
     # сдвинуть объект obj на смещение камеры
@@ -324,9 +304,6 @@ class Camera:
     # позиционировать камеру на объекте target
     def update(self, target):
         self.dx = -(target.rect.x + target.rect.w // 2 - WIDTH // 2)
-
-    def sb(self, s):
-        self.dx = - WIDTH // 2 - s
 
 
 def up():
@@ -352,7 +329,7 @@ try:
 
     start_screen()
     zast()
-    *char, level_x, level_y = generate_level_1()
+    *char, level_x, level_y, fon, zem = generate_level_1()
     camera = Camera()
     running = True
 
@@ -360,7 +337,6 @@ try:
     s = 0
     r = False
     lor = 1
-    mp = 0
     cor = [70, HEIGHT - KH + 50 - Z]
     cor = [WIDTH // 2, HEIGHT - KH + 50 - Z]
     while running:
@@ -395,14 +371,8 @@ try:
                     r = True
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if 60 <= event.pos[0] <= 120 and 60 <= event.pos[1] <= 120:
-                    player.rect.x = 70
-                    camera.update(player)
-                    mp = 0
+                    player.rect.x -= s
                     s = 0
-                    for i in all_sprites:
-                        i.kill()
-                    *char, level_x, level_y = generate_level_1()
-                    Camera()
         if r:
             player = char[lor]
             p += 1
@@ -425,11 +395,8 @@ try:
             except Exception as ex:
                 pass
         if pygame.sprite.spritecollideany(player, money_group):
-            mp += 1
+            MONEY += 5
             mcoin()
-
-        if pygame.sprite.spritecollideany(player, man_group):
-            running = False
 
         cor = [player.rect.x, player.rect.y]
         for i in range(3):
@@ -437,17 +404,15 @@ try:
 
 
         # изменяем ракурс камеры
-        if s + XC - player.rect.w // 2 - WIDTH // 2 > 0 and s + WIDTH // 2 + player.rect.w // 2 < WIDTH * 3 - 70:
-            camera.update(player)
-            # обновляем положение всех спрайтов
-            for sprite in all_sprites:
-                camera.apply(sprite)
+        camera.update(player)
+        # обновляем положение всех спрайтов
+        for sprite in all_sprites:
+            camera.apply(sprite)
 
         screen.fill((0, 0, 0))
         fon_group.draw(screen)
         tiles_group.draw(screen)
         money_group.draw(screen)
-        man_group.draw(screen)
         if player == char[0]:
             char_group.draw(screen)
         elif player == char[1]:
@@ -466,33 +431,7 @@ try:
 
         pygame.display.flip()
         clock.tick(fps)
-    running = True
-    rep = [(0, "Джей", "*Бубнит какую-то тарабарщину*"), (0, "Пасси", "~Что это с ним?~"),
-           (0, "Пасси", "Что мне делать?", "Окликнуть", "Пройти мимо"), (1, "Пасси", "Папа? Ты в порядке?"),
-           (1, "Джей", "*Вздрогнул*"), (1, "Джей", "Да, Пасси, не беспокойся. Ступай, я догоню."),
-           (2, "Пасси", "*Пожала плечами*")]
-    nr = -1
-    vb = 0
-    p = [0]
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN or nr == -1:
-                fon_group.draw(screen)
-                tiles_group.draw(screen)
-                nr += 1
-                if rep[nr][0] in p:
-                    if rep[nr][1] == "Джей":
-                        pers = pygame.transform.scale(load_image('Джей1-2.png'), (WIDTH // 4, HEIGHT // 8 * 6))
-                        pers.set_colorkey((255, 255, 255))
-                        screen.blit(pers, (WIDTH // 3 * 2, HEIGHT // 8 * 2))
-                    else:
-                        pass
-                    if len(rep[nr]) == 3:
-                        pass
-                    else:
-                        pass
-            pygame.display.flip()
-            clock.tick(FPS)
+
     pygame.quit()
 except:
     print('Error')
