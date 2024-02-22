@@ -1,5 +1,7 @@
 import os
 import sys
+import textwrap
+
 import pygame
 import sqlite3
 
@@ -356,15 +358,15 @@ try:
 
     start_screen()
     zast()
-    *char, level_x, level_y = generate_level_1()
-    camera = Camera()
-    running = True
-
-    p = 0
-    s = 0
-    r = False
-    lor = 1
     if LEVEL == 1:
+        *char, level_x, level_y = generate_level_1()
+        camera = Camera()
+        running = True
+
+        p = 0
+        s = 0
+        r = False
+        lor = 1
         mp = 0
         cor = [70, HEIGHT - KH + 50 - Z]
         while running:
@@ -474,17 +476,17 @@ try:
         rep = [(0, "Джей", "*Бубнит какую-то тарабарщину*"), (0, "Пасси", "~Что это с ним?~"),
                (0, "Пасси", "Что мне делать?", "Окликнуть", "Пройти мимо"), (1, "Пасси", "Папа? Ты в порядке?"),
                (1, "Джей", "*Вздрогнул*"), (1, "Джей", "Да, Пасси, не беспокойся. Ступай, я догоню."),
-               (2, "Пасси", "*Пожала плечами*")]
-        nr = 0
+               (2, "Пасси", "*Пожала плечами*"), (0, "Пасси", "*Посмотрела на каменную пирамиду, поросшую мхом*"),
+               (0, "Пасси", "*Вздохнув, стала взбираться по высоким ступеням*")]
         vb = 0
         p = [0]
         while running:
             for event in pygame.event.get():
-                if len(rep[nr]) == 3:
+                if len(rep[0]) == 3:
                     fon_group.draw(screen)
                     tiles_group.draw(screen)
-                    if rep[nr][0] in p:
-                        if rep[nr][1] == "Джей":
+                    if rep[0][0] in p:
+                        if rep[0][1] == "Джей":
                             pers = pygame.transform.scale(load_image('Джей1-2.png'), (WIDTH // 4, HEIGHT // 8 * 6))
                             pers.set_colorkey((255, 255, 255))
                             screen.blit(pers, (WIDTH // 3 * 2, HEIGHT // 8 * 2))
@@ -492,28 +494,32 @@ try:
                             pygame.draw.rect(screen, (100, 100, 100), (60, HEIGHT // 3 * 2,
                                                                        WIDTH // 5 * 3, HEIGHT // 3 - 60))
                             font = pygame.font.SysFont(None, 50)
-                            string_rendered = font.render(rep[nr][-1], 1, pygame.Color('white'))
+                            string_rendered = font.render(rep[0][-1], 1, pygame.Color('white'))
                             intro_rect = string_rendered.get_rect()
                             intro_rect.x = 70
                             intro_rect.y = HEIGHT // 3 * 2 + 10
                             intro_rect.w = WIDTH // 5 * 3 - 20
                             intro_rect.h = HEIGHT // 3 - 80
                             screen.blit(string_rendered, intro_rect)
-                        elif rep[nr][1] == 'Пасси' and len(rep[nr]) == 3:
+                        elif rep[0][1] == 'Пасси':
                             pers = pygame.transform.scale(load_image('Пасс1-2.png'), (WIDTH // 4, HEIGHT // 8 * 6))
                             pers.set_colorkey((255, 255, 255))
                             screen.blit(pers, (60, HEIGHT // 8 * 2))
                             pygame.draw.rect(screen, (100, 100, 100), (WIDTH // 4 + 80, HEIGHT // 3 * 2,
                                                                       WIDTH // 5 * 3, HEIGHT // 3 - 60))
                             font = pygame.font.SysFont(None, 50)
-                            string_rendered = font.render(rep[nr][2], 1, pygame.Color('white'))
-                            intro_rect = string_rendered.get_rect()
-                            intro_rect.x = WIDTH // 4 + 80 + 10
-                            intro_rect.y = HEIGHT // 3 * 2 + 10
-                            intro_rect.w = WIDTH // 5 * 3 - 20
-                            intro_rect.h = HEIGHT // 3 - 80
-                            screen.blit(string_rendered, intro_rect)
-                elif len(rep[nr]) > 3:
+                            slov = textwrap.wrap(rep[0][2], (WIDTH // 5 * 3 - 20) * 2.5 // 50, break_long_words=False)
+                            for i in range(len(slov)):
+                                string_rendered = font.render(slov[i], 1, pygame.Color('white'))
+                                intro_rect = string_rendered.get_rect()
+                                intro_rect.x = WIDTH // 4 + 80 + 10
+                                intro_rect.y = HEIGHT // 3 * 2 + 10 + 50 * i
+                                intro_rect.w = WIDTH // 5 * 3 - 20
+                                intro_rect.h = HEIGHT // 3 - 80
+                                screen.blit(string_rendered, intro_rect)
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        del rep[0]
+                elif len(rep[0]) > 3:
                     fon_group.draw(screen)
                     tiles_group.draw(screen)
                     pers = pygame.transform.scale(load_image('Пасс1-2.png'), (WIDTH // 4, HEIGHT // 8 * 6))
@@ -522,12 +528,14 @@ try:
                     pygame.draw.rect(screen, (100, 100, 100), (WIDTH // 4 + 80, HEIGHT // 3 * 2,
                                                                WIDTH // 5 * 3, HEIGHT // 9 - 30))
                     font = pygame.font.SysFont(None, 50)
-                    string_rendered = font.render(rep[nr][2], 1, pygame.Color('white'))
+                    string_rendered = font.render(rep[0][2], 1, pygame.Color('white'))
                     intro_rect = string_rendered.get_rect()
                     intro_rect.x = WIDTH // 4 + 80 + 10
                     intro_rect.y = HEIGHT // 3 * 2 + 10
                     intro_rect.w = WIDTH // 5 * 3 - 20
                     intro_rect.h = HEIGHT // 9 - 50
+
+                    screen.blit(string_rendered, intro_rect)
 
                     if (WIDTH // 4 + 80 < pygame.mouse.get_pos()[0] < WIDTH // 4 + 80 + WIDTH // 5 * 3 and
                             HEIGHT // 3 * 2 + HEIGHT // 9 - 20 < pygame.mouse.get_pos()[1]
@@ -536,66 +544,83 @@ try:
                         pygame.draw.rect(screen, (100, 112, 53), (WIDTH // 4 + 80,
                                                                   HEIGHT // 3 * 2 + HEIGHT // 9 - 20, WIDTH // 5 * 3,
                                                                   HEIGHT // 9 - 30))
-                        font = pygame.font.SysFont(None, 50)
-                        string_rendered = font.render(rep[nr][3], 1, pygame.Color('white'))
-                        intro_rect = string_rendered.get_rect()
-                        intro_rect.x = WIDTH // 4 + 80 + 10
-                        intro_rect.y = HEIGHT // 3 * 2 + HEIGHT // 9 - 20 + 10
-                        intro_rect.w = WIDTH // 5 * 3 - 20
-                        intro_rect.h = HEIGHT // 9 - 30
                     else:
                         screen.blit(pers, (60, HEIGHT // 8 * 2))
                         pygame.draw.rect(screen, (100, 100, 100), (WIDTH // 4 + 80,
                                                                    HEIGHT // 3 * 2 + HEIGHT // 9 - 20,
                                                                    WIDTH // 5 * 3, HEIGHT // 9 - 30))
-                        font = pygame.font.SysFont(None, 50)
-                        string_rendered = font.render(rep[nr][3], 1, pygame.Color('white'))
-                        intro_rect = string_rendered.get_rect()
-                        intro_rect.x = WIDTH // 4 + 80 + 10
-                        intro_rect.y = HEIGHT // 3 * 2 + HEIGHT // 9 - 20 + 10
-                        intro_rect.w = WIDTH // 5 * 3 - 20
-                        intro_rect.h = HEIGHT // 9 - 30
+                    font = pygame.font.SysFont(None, 50)
+                    string_rendered = font.render(rep[0][3], 1, pygame.Color('white'))
+                    intro_rect = string_rendered.get_rect()
+                    intro_rect.x = WIDTH // 4 + 80 + 10
+                    intro_rect.y = HEIGHT // 3 * 2 + HEIGHT // 9 - 20 + 10
+                    intro_rect.w = WIDTH // 5 * 3 - 20
+                    intro_rect.h = HEIGHT // 9 - 30
+
+                    screen.blit(string_rendered, intro_rect)
 
                     if (WIDTH // 4 + 80 < pygame.mouse.get_pos()[0] < WIDTH // 4 + 80 + WIDTH // 5 * 3 and
-                            HEIGHT // 3 * 2 + HEIGHT // 9 * 3 - 60 < pygame.mouse.get_pos()[1]
-                            < HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 30):
+                            HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 40 < pygame.mouse.get_pos()[1]
+                            < HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 40 + HEIGHT // 9 - 30):
                         screen.blit(pers, (60, HEIGHT // 8 * 2))
                         pygame.draw.rect(screen, (100, 112, 53), (WIDTH // 4 + 80,
                                                                   HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 40,
                                                                   WIDTH // 5 * 3, HEIGHT // 9 - 30))
-                        font = pygame.font.SysFont(None, 50)
-                        string_rendered = font.render(rep[nr][4], 1, pygame.Color('white'))
-                        intro_rect = string_rendered.get_rect()
-                        intro_rect.x = WIDTH // 4 + 80 + 10
-                        intro_rect.y = HEIGHT // 3 * 2 + HEIGHT // 9 - 20 + 10
-                        intro_rect.w = WIDTH // 5 * 3 - 20
-                        intro_rect.h = HEIGHT // 9 - 30
                     else:
                         screen.blit(pers, (60, HEIGHT // 8 * 2))
                         pygame.draw.rect(screen, (100, 100, 100), (WIDTH // 4 + 80,
-                                                                   HEIGHT // 3 * 2 + HEIGHT // 9 - 20, WIDTH // 5 * 3,
-                                                                   HEIGHT // 9 - 30))
-                        font = pygame.font.SysFont(None, 50)
-                        string_rendered = font.render(rep[nr][4], 1, pygame.Color('white'))
-                        intro_rect = string_rendered.get_rect()
-                        intro_rect.x = WIDTH // 4 + 80 + 10
-                        intro_rect.y = HEIGHT // 3 * 2 + HEIGHT // 9 - 20 + 10
-                        intro_rect.w = WIDTH // 5 * 3 - 20
-                        intro_rect.h = HEIGHT // 9 - 30
+                                                                   HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 40,
+                                                                   WIDTH // 5 * 3, HEIGHT // 9 - 30))
+                    font = pygame.font.SysFont(None, 50)
+                    string_rendered = font.render(rep[0][4], 1, pygame.Color('white'))
+                    intro_rect = string_rendered.get_rect()
+                    intro_rect.x = WIDTH // 4 + 80 + 10
+                    intro_rect.y = HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 40 + 10
+                    intro_rect.w = WIDTH // 5 * 3 - 20
+                    intro_rect.h = HEIGHT // 9 - 30
 
                     screen.blit(string_rendered, intro_rect)
-                if event.type == pygame.MOUSEBUTTONDOWN or nr == -1:
-                    nr += 1
 
-                    #(100, 112, 53)
+                    if (event.type == pygame.MOUSEBUTTONDOWN and
+                            ((WIDTH // 4 + 80 < pygame.mouse.get_pos()[0] < WIDTH // 4 + 80 + WIDTH // 5 * 3 and
+                              HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 40 < pygame.mouse.get_pos()[1]
+                              < HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 40 + HEIGHT // 9 - 30) or
+                             (WIDTH // 4 + 80 < pygame.mouse.get_pos()[0] < WIDTH // 4 + 80 + WIDTH // 5 * 3 and
+                              HEIGHT // 3 * 2 + HEIGHT // 9 - 20 < pygame.mouse.get_pos()[1]
+                              < HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 30))):
+                        del rep[0]
+                        if (HEIGHT // 3 * 2 + HEIGHT // 9 - 20 < pygame.mouse.get_pos()[1]
+                                < HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 30):
+                            p = [0, 1]
+                        else:
+                            p = [0, 2]
+
+                        while True:
+                            if rep[0][0] in p:
+                                break
+                            else:
+                                del rep[0]
+
+                if len(rep) == 0:
+                    running = False
                 pygame.display.flip()
                 clock.tick(FPS)
 
+        running = True
+        while running:
+            screen.fill((125, 125, 125))
+            pygame.draw.rect(screen, (175, 175, 175), (WIDTH // 3, HEIGHT // 3, WIDTH // 3, HEIGHT // 3))
+            print(1)
+            for event in pygame.event.get():
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    running = False
         MONEY = MONEY + mp * 5
+        LEVEL = 2
         with open('data/данные.txt', 'w') as dan:
             dan.write(f'{LEVEL} {MONEY}')
 
         LEVEL += 1
+    zast()
     pygame.quit()
 except:
     print('Error')
