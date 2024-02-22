@@ -475,23 +475,22 @@ try:
                (0, "Пасси", "Что мне делать?", "Окликнуть", "Пройти мимо"), (1, "Пасси", "Папа? Ты в порядке?"),
                (1, "Джей", "*Вздрогнул*"), (1, "Джей", "Да, Пасси, не беспокойся. Ступай, я догоню."),
                (2, "Пасси", "*Пожала плечами*")]
-        nr = -1
+        nr = 0
         vb = 0
         p = [0]
         while running:
             for event in pygame.event.get():
-                if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN or nr == -1:
+                if len(rep[nr]) == 3:
                     fon_group.draw(screen)
                     tiles_group.draw(screen)
-                    nr += 1
                     if rep[nr][0] in p:
                         if rep[nr][1] == "Джей":
                             pers = pygame.transform.scale(load_image('Джей1-2.png'), (WIDTH // 4, HEIGHT // 8 * 6))
                             pers.set_colorkey((255, 255, 255))
                             screen.blit(pers, (WIDTH // 3 * 2, HEIGHT // 8 * 2))
 
-                            pygame.draw.rect(screen, (100, 112, 53), (60, HEIGHT // 3 * 2,
-                                                                      WIDTH // 5 * 3, HEIGHT // 3 - 60))
+                            pygame.draw.rect(screen, (100, 100, 100), (60, HEIGHT // 3 * 2,
+                                                                       WIDTH // 5 * 3, HEIGHT // 3 - 60))
                             font = pygame.font.SysFont(None, 50)
                             string_rendered = font.render(rep[nr][-1], 1, pygame.Color('white'))
                             intro_rect = string_rendered.get_rect()
@@ -504,18 +503,91 @@ try:
                             pers = pygame.transform.scale(load_image('Пасс1-2.png'), (WIDTH // 4, HEIGHT // 8 * 6))
                             pers.set_colorkey((255, 255, 255))
                             screen.blit(pers, (60, HEIGHT // 8 * 2))
-                            pygame.draw.rect(screen, (100, 112, 53), (WIDTH // 4 + 80, HEIGHT // 3 * 2,
+                            pygame.draw.rect(screen, (100, 100, 100), (WIDTH // 4 + 80, HEIGHT // 3 * 2,
                                                                       WIDTH // 5 * 3, HEIGHT // 3 - 60))
                             font = pygame.font.SysFont(None, 50)
-                            string_rendered = font.render(rep[nr][-1], 1, pygame.Color('white'))
+                            string_rendered = font.render(rep[nr][2], 1, pygame.Color('white'))
                             intro_rect = string_rendered.get_rect()
                             intro_rect.x = WIDTH // 4 + 80 + 10
                             intro_rect.y = HEIGHT // 3 * 2 + 10
                             intro_rect.w = WIDTH // 5 * 3 - 20
                             intro_rect.h = HEIGHT // 3 - 80
                             screen.blit(string_rendered, intro_rect)
-                        else:
-                            pass
+                elif len(rep[nr]) > 3:
+                    fon_group.draw(screen)
+                    tiles_group.draw(screen)
+                    pers = pygame.transform.scale(load_image('Пасс1-2.png'), (WIDTH // 4, HEIGHT // 8 * 6))
+                    pers.set_colorkey((255, 255, 255))
+                    screen.blit(pers, (60, HEIGHT // 8 * 2))
+                    pygame.draw.rect(screen, (100, 100, 100), (WIDTH // 4 + 80, HEIGHT // 3 * 2,
+                                                               WIDTH // 5 * 3, HEIGHT // 9 - 30))
+                    font = pygame.font.SysFont(None, 50)
+                    string_rendered = font.render(rep[nr][2], 1, pygame.Color('white'))
+                    intro_rect = string_rendered.get_rect()
+                    intro_rect.x = WIDTH // 4 + 80 + 10
+                    intro_rect.y = HEIGHT // 3 * 2 + 10
+                    intro_rect.w = WIDTH // 5 * 3 - 20
+                    intro_rect.h = HEIGHT // 9 - 50
+
+                    if (WIDTH // 4 + 80 < pygame.mouse.get_pos()[0] < WIDTH // 4 + 80 + WIDTH // 5 * 3 and
+                            HEIGHT // 3 * 2 + HEIGHT // 9 - 20 < pygame.mouse.get_pos()[1]
+                            < HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 30):
+                        screen.blit(pers, (60, HEIGHT // 8 * 2))
+                        pygame.draw.rect(screen, (100, 112, 53), (WIDTH // 4 + 80,
+                                                                  HEIGHT // 3 * 2 + HEIGHT // 9 - 20, WIDTH // 5 * 3,
+                                                                  HEIGHT // 9 - 30))
+                        font = pygame.font.SysFont(None, 50)
+                        string_rendered = font.render(rep[nr][3], 1, pygame.Color('white'))
+                        intro_rect = string_rendered.get_rect()
+                        intro_rect.x = WIDTH // 4 + 80 + 10
+                        intro_rect.y = HEIGHT // 3 * 2 + HEIGHT // 9 - 20 + 10
+                        intro_rect.w = WIDTH // 5 * 3 - 20
+                        intro_rect.h = HEIGHT // 9 - 30
+                    else:
+                        screen.blit(pers, (60, HEIGHT // 8 * 2))
+                        pygame.draw.rect(screen, (100, 100, 100), (WIDTH // 4 + 80,
+                                                                   HEIGHT // 3 * 2 + HEIGHT // 9 - 20,
+                                                                   WIDTH // 5 * 3, HEIGHT // 9 - 30))
+                        font = pygame.font.SysFont(None, 50)
+                        string_rendered = font.render(rep[nr][3], 1, pygame.Color('white'))
+                        intro_rect = string_rendered.get_rect()
+                        intro_rect.x = WIDTH // 4 + 80 + 10
+                        intro_rect.y = HEIGHT // 3 * 2 + HEIGHT // 9 - 20 + 10
+                        intro_rect.w = WIDTH // 5 * 3 - 20
+                        intro_rect.h = HEIGHT // 9 - 30
+
+                    if (WIDTH // 4 + 80 < pygame.mouse.get_pos()[0] < WIDTH // 4 + 80 + WIDTH // 5 * 3 and
+                            HEIGHT // 3 * 2 + HEIGHT // 9 * 3 - 60 < pygame.mouse.get_pos()[1]
+                            < HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 30):
+                        screen.blit(pers, (60, HEIGHT // 8 * 2))
+                        pygame.draw.rect(screen, (100, 112, 53), (WIDTH // 4 + 80,
+                                                                  HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 40,
+                                                                  WIDTH // 5 * 3, HEIGHT // 9 - 30))
+                        font = pygame.font.SysFont(None, 50)
+                        string_rendered = font.render(rep[nr][4], 1, pygame.Color('white'))
+                        intro_rect = string_rendered.get_rect()
+                        intro_rect.x = WIDTH // 4 + 80 + 10
+                        intro_rect.y = HEIGHT // 3 * 2 + HEIGHT // 9 - 20 + 10
+                        intro_rect.w = WIDTH // 5 * 3 - 20
+                        intro_rect.h = HEIGHT // 9 - 30
+                    else:
+                        screen.blit(pers, (60, HEIGHT // 8 * 2))
+                        pygame.draw.rect(screen, (100, 100, 100), (WIDTH // 4 + 80,
+                                                                   HEIGHT // 3 * 2 + HEIGHT // 9 - 20, WIDTH // 5 * 3,
+                                                                   HEIGHT // 9 - 30))
+                        font = pygame.font.SysFont(None, 50)
+                        string_rendered = font.render(rep[nr][4], 1, pygame.Color('white'))
+                        intro_rect = string_rendered.get_rect()
+                        intro_rect.x = WIDTH // 4 + 80 + 10
+                        intro_rect.y = HEIGHT // 3 * 2 + HEIGHT // 9 - 20 + 10
+                        intro_rect.w = WIDTH // 5 * 3 - 20
+                        intro_rect.h = HEIGHT // 9 - 30
+
+                    screen.blit(string_rendered, intro_rect)
+                if event.type == pygame.MOUSEBUTTONDOWN or nr == -1:
+                    nr += 1
+
+                    #(100, 112, 53)
                 pygame.display.flip()
                 clock.tick(FPS)
 
