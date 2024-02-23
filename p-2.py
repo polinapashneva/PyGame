@@ -1,5 +1,4 @@
 import os
-import sys
 import textwrap
 
 import pygame
@@ -15,6 +14,7 @@ KH = 0
 Z = 0
 XC = 0
 CORP = []
+M = 0
 
 
 def load_image(name, color_key=None):
@@ -283,9 +283,11 @@ def generate_level_1():
     if WIDTH <= 5356:
         m = round(5356 / WIDTH / 3)
         z = round(75 / m)
+        M = 1 / m
     else:
         m = WIDTH / 5356 / 3
         z = round(75 * m)
+        M = m
     Z = z
     kh = round((HEIGHT - z) / 7) + 20
     KH = kh
@@ -378,7 +380,7 @@ try:
                 lor = 2
                 player.rect.x -= 7
                 s -= 7
-                if pygame.sprite.spritecollideany(player, tiles_group):
+                if pygame.sprite.spritecollideany(player, tiles_group) or s < 0 - 60:
                     player.rect.x += 7
                     s += 7
             elif keys[pygame.K_RIGHT]:
@@ -607,13 +609,56 @@ try:
                 clock.tick(FPS)
 
         running = True
+
         while running:
-            screen.fill((125, 125, 125))
-            pygame.draw.rect(screen, (175, 175, 175), (WIDTH // 3, HEIGHT // 3, WIDTH // 3, HEIGHT // 3))
-            print(1)
+            for event in pygame.event.get():
+                fon = pygame.transform.scale(load_image('г-ф.png'), (WIDTH, HEIGHT))
+                screen.blit(fon, (0, 0))
+
+                kr = pygame.transform.scale(load_image('г-1.png'), (round(HEIGHT * M), round(HEIGHT * M)))
+                kr.set_colorkey((255, 255, 255))
+                screen.blit(kr, (abs(WIDTH - HEIGHT * M) // 2, abs(HEIGHT - HEIGHT * M) // 2))
+
+                pygame.display.flip()
+                clock.tick(FPS)
+
+        running = True
+        while running:
+            screen.fill((135, 168, 109))
+            pygame.draw.rect(screen, (72, 99, 51), (WIDTH // 4, HEIGHT // 4, WIDTH // 2, HEIGHT // 2))
+            font = pygame.font.SysFont(None, 100)
+            string_rendered = font.render('Уровень пройден!', 1, pygame.Color('white'))
+            intro_rect = string_rendered.get_rect()
+            intro_rect.x = WIDTH // 4 + 20
+            intro_rect.y = HEIGHT // 4 + 20
+            screen.blit(string_rendered, intro_rect)
+
+            font = pygame.font.SysFont(None, 50)
+            string_rendered = font.render(f'+ {mp * 5}', 1, pygame.Color('white'))
+            intro_rect = string_rendered.get_rect()
+            intro_rect.x = WIDTH // 4 + 10
+            intro_rect.y = HEIGHT // 4 + 120
+            screen.blit(string_rendered, intro_rect)
+
+            font = pygame.font.SysFont(None, 50)
+            string_rendered = font.render(f'+ 10', 1, pygame.Color('white'))
+            intro_rect = string_rendered.get_rect()
+            intro_rect.x = WIDTH // 4 + 10
+            intro_rect.y = HEIGHT // 4 + 180
+            screen.blit(string_rendered, intro_rect)
+
+            font = pygame.font.SysFont(None, 50)
+            string_rendered = font.render(f'Итог: + {mp * 5 + 10}', 1, pygame.Color('white'))
+            intro_rect = string_rendered.get_rect()
+            intro_rect.x = WIDTH // 4 + 10
+            intro_rect.y = HEIGHT // 4 + 240
+            screen.blit(string_rendered, intro_rect)
             for event in pygame.event.get():
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     running = False
+            pygame.display.flip()
+            clock.tick(FPS)
+
         MONEY = MONEY + mp * 5
         LEVEL = 2
         with open('data/данные.txt', 'w') as dan:
