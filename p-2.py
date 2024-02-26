@@ -1,12 +1,12 @@
 import os
+import sys
 import textwrap
-
 import pygame
 import sqlite3
 
 
 FPS = 50
-with open('data/данные.txt', 'r') as dan:
+with open('data/данные.txt', 'r') as dan: # считывает данные игрока из файла
     dan = dan.readline().split(' ')
     MONEY = int(dan[-1])
     LEVEL = int(dan[0])
@@ -14,7 +14,7 @@ KH = 0
 Z = 0
 XC = 0
 CORP = []
-M = 0
+DD = 0
 
 
 def load_image(name, color_key=None):
@@ -54,7 +54,29 @@ def start_screen(): # Создаем стартовую заставку, кот
         clock.tick(FPS)
 
 
+def notll(): # выводим на экран сообщение о том, что уровня еще нет
+    pygame.draw.rect(screen, (50, 50, 50), (WIDTH // 3, HEIGHT // 3, WIDTH // 3, HEIGHT // 3))
+    fon = pygame.font.SysFont(None, 50)
+    slov = textwrap.wrap("Ой-ой... Кажется этот уровень в процессе изготовления...",
+                         (WIDTH // 3) // 50 * 2.5, break_long_words=False)
+    for i in slov:
+        string_rendered = fon.render(i,1, pygame.Color('white'))
+        intro_rect = string_rendered.get_rect()
+        intro_rect.y = HEIGHT // 3 + 20 + slov.index(i) * 50
+        intro_rect.x = WIDTH // 3 + 20
+        screen.blit(string_rendered, intro_rect)
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.KEYDOWN or \
+                    event.type == pygame.MOUSEBUTTONDOWN:
+                return
+        pygame.display.flip()
+        clock.tick(FPS)
+
 def zast(): # Создаем Меню
+    global DD
     fon = pygame.transform.scale(load_image('заставка.png'), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
     intro_text = ['ИГРАТЬ', str(MONEY), "ВЫХОД"] # Список кнопок
@@ -139,12 +161,14 @@ def zast(): # Создаем Меню
                     for i in coordkn:
                         if i[1] <= event.pos[1] <= i[2]:
                             if intro_text[coordkn.index(c[-1])] == "ВЫХОД":
-                                terminate()
-                            elif intro_text[coordkn.index(c[-1])] == str(MONEY):
-                                promo()
-                            elif intro_text[coordkn.index(c[-1])] == 'ИГРАТЬ':
+                                DD = 1
                                 return
-                                # 23
+                            elif intro_text[coordkn.index(c[-1])] == str(MONEY):
+                                DD = 2
+                                return
+                            elif intro_text[coordkn.index(c[-1])] == 'ИГРАТЬ':
+                                DD = 3
+                                return
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -164,19 +188,19 @@ def promo():
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN: # Заканчиваем ввод промокода
                 try:
-                    bd = sqlite3.connect("промокод.sqlite")
-                    cur = bd.cursor("промокод.sqlite")
+                    bd = sqlite3.connect("data/промокод.sqlite")
+                    cur = bd.cursor()
                     result = cur.execute(f"""SELECT * FROM код WHERE Код = {pc}""").fetchone()
                     if result[-1] == '0':
-                        MONEY += result[1]
+                        MONEY += int(result[1])
                         with open('data/данные.txt', 'w') as dan:
                             dan.write(f'{LEVEL} {MONEY}')
                         cur.execute(f'''UPDATE код SET применения = 1 WHERE Код = {pc}''')
                         bd.commit()
                     bd.close()
+                    return
                 except:
                     pass
-                zast()
             elif event.type == pygame.KEYDOWN: # Показываем ввод с клавиатуры в нашем окне
                 pc = pc + str(event.unicode)
                 font = pygame.font.SysFont(None, 30)
@@ -200,7 +224,7 @@ class Stolb(pygame.sprite.Sprite): # создаем столбы
         self.rect = self.image.get_rect().move(pos[0], pos[1])
 
 
-class Tile(pygame.sprite.Sprite):
+class Tile(pygame.sprite.Sprite): # создаем платформы
     def __init__(self, pos, a):
         super().__init__(tiles_group, plat_group, all_sprites)
         self.image = pygame.transform.scale(load_image('платформа.png'), (a, 29))
@@ -208,7 +232,7 @@ class Tile(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(pos[0], pos[1])
 
 
-class Coins(pygame.sprite.Sprite):
+class Coins(pygame.sprite.Sprite): # создаем монеты
     def __init__(self, x, y):
         super().__init__(money_group, all_sprites)
         self.image = pygame.transform.scale(load_image('монета.png'), (KH - 30, KH - 30))
@@ -216,14 +240,14 @@ class Coins(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(x, y)
 
 
-class Zem(pygame.sprite.Sprite):
+class Zem(pygame.sprite.Sprite): # создаем спрайт земли
     def __init__(self):
         super().__init__(tiles_group, zem_group, plat_group, all_sprites)
         self.image = pygame.Surface([WIDTH * 3, 1])
         self.rect = pygame.Rect(1, HEIGHT - (KH // 3 + KH // 12), WIDTH * 3, 1)
 
 
-class Player(pygame.sprite.Sprite):
+class Player(pygame.sprite.Sprite): # создаем стоящего игрока
     def __init__(self, w, h):
         super().__init__(char_group, all_sprites)
         self.image = pygame.transform.scale(load_image('челик стоит.png'), (w - 55, h - 40))
@@ -231,7 +255,7 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(70, HEIGHT - h + 50 - Z)
 
 
-class Prun(pygame.sprite.Sprite):
+class Prun(pygame.sprite.Sprite): # создаем бегущего игрока в одну сторону
     def __init__(self, w, h):
         super().__init__(charrun_group, all_sprites)
         self.image = pygame.transform.scale(load_image('челик бежит.png'), (w - 55, h - 40))
@@ -239,7 +263,7 @@ class Prun(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(70, HEIGHT - h + 50 - Z)
 
 
-class Prunl(pygame.sprite.Sprite):
+class Prunl(pygame.sprite.Sprite): # создаем игрока бегущего в другую сторону
     def __init__(self, w, h):
         super().__init__(charrunl_group, all_sprites)
         self.image = pygame.transform.scale(load_image('челик бежит-2.png'), (w - 55, h - 40))
@@ -247,7 +271,7 @@ class Prunl(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(70, HEIGHT - h + 50 - Z)
 
 
-class Fon(pygame.sprite.Sprite):
+class Fon(pygame.sprite.Sprite): # создаем спрайт фона
     def __init__(self, h):
         super().__init__(fon_group, all_sprites)
         self.image = pygame.transform.scale(load_image(f'{LEVEL}.png'), (h, HEIGHT))
@@ -256,7 +280,7 @@ class Fon(pygame.sprite.Sprite):
         clock.tick(FPS)
 
 
-class Man(pygame.sprite.Sprite):
+class Man(pygame.sprite.Sprite): # создаем спрайт npc для первого уровня
     def __init__(self, x, h):
         super().__init__(man_group, all_sprites)
         self.image = pygame.transform.scale(load_image('Джей.png'), (x - 70, h - 60))
@@ -277,17 +301,15 @@ charrunl_group = pygame.sprite.Group()
 man_group = pygame.sprite.Group()
 
 
-def generate_level_1():
+def generate_level_1(): # создаем карту уровня
     global KH, Z, XC
     new_player = None
     if WIDTH <= 5356:
         m = round(5356 / WIDTH / 3)
         z = round(75 / m)
-        M = 1 / m
     else:
         m = WIDTH / 5356 / 3
         z = round(75 * m)
-        M = m
     Z = z
     kh = round((HEIGHT - z) / 7) + 20
     KH = kh
@@ -337,12 +359,12 @@ class Camera:
         self.dx = - WIDTH // 2 - s
 
 
-def up():
+def up(): # возвращает координаты платформы с которой столкнулся спрайт игрока
     if pygame.sprite.spritecollideany(player, plat_group):
         return pygame.sprite.spritecollideany(player, plat_group).rect.y
 
 
-def mcoin():
+def mcoin(): # уничтожает спрайт созданной монетки
     if pygame.sprite.spritecollideany(player, money_group):
         pygame.sprite.spritecollideany(player, money_group).kill()
 
@@ -359,313 +381,308 @@ try:
     tile_width = tile_height = 50
 
     start_screen()
-    zast()
-    if LEVEL == 1:
-        *char, level_x, level_y = generate_level_1()
-        camera = Camera()
-        running = True
+    while True: # связываем меню и выбранные кнопки
+        zast()
+        if DD == 1:
+            terminate()
+        elif DD == 2:
+            promo()
+        elif DD == 3:
+            break
+    while True:
+        if LEVEL == 1: # если игроку нужно пройти уровень 1...
+            *char, level_x, level_y = generate_level_1()
+            camera = Camera()
+            running = True
 
-        p = 0
-        s = 0
-        r = False
-        lor = 1
-        mp = 0
-        cor = [70, HEIGHT - KH + 50 - Z]
-        while running:
-            player = char[0]
-            lor = 0
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_LEFT]:
-                player = char[2]
-                lor = 2
-                player.rect.x -= 7
-                s -= 7
-                if pygame.sprite.spritecollideany(player, tiles_group) or s < 0 - 60:
-                    player.rect.x += 7
-                    s += 7
-            elif keys[pygame.K_RIGHT]:
-                player = char[1]
-                lor = 1
-                player.rect.x += 7
-                s += 7
-                if pygame.sprite.spritecollideany(player, tiles_group):
+            p = 0
+            s = 0
+            r = False
+            lor = 1
+            mp = 0
+            cor = [70, HEIGHT - KH + 50 - Z]
+            while running: # запускаем платформер
+                player = char[0]
+                lor = 0
+                keys = pygame.key.get_pressed()
+                if keys[pygame.K_LEFT]: # зажата кнопка "влево"
+                    player = char[2]
+                    lor = 2
                     player.rect.x -= 7
                     s -= 7
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_UP:
-                        player = char[1]
-                        t = KH // 9 * 2 + 5
-                        if t % 2 != 0:
-                            t += 1
-                        r = True
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    if 60 <= event.pos[0] <= 120 and 60 <= event.pos[1] <= 120:
-                        player.rect.x = 70
-                        camera.update(player)
-                        mp = 0
-                        s = 0
-                        for i in all_sprites:
-                            i.kill()
-                        *char, level_x, level_y = generate_level_1()
-                        Camera()
-            if r:
-                player = char[lor]
-                p += 1
-                if p <= t // 2:
-                    player.rect.y -= 9
                     if pygame.sprite.spritecollideany(player, tiles_group):
+                        player.rect.x += 7
+                        s += 7
+                elif keys[pygame.K_RIGHT]: # зажата кнопка "вправо"
+                    player = char[1]
+                    lor = 1
+                    player.rect.x += 7
+                    s += 7
+                    if pygame.sprite.spritecollideany(player, tiles_group):
+                        player.rect.x -= 7
+                        s -= 7
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        running = False
+                    elif event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_UP: # нажата кнопка "вверх", отвечающая за прыжок
+                            player = char[1]
+                            t = KH // 9 * 2 + 5
+                            if t % 2 != 0:
+                                t += 1
+                            r = True
+                    elif event.type == pygame.MOUSEBUTTONDOWN:
+                        if 60 <= event.pos[0] <= 120 and 60 <= event.pos[1] <= 120:
+                            # если игрок мышкой нажал на кнопку в левом верхнем углу экрана перезапускаем уровень
+                            player.rect.x = 70
+                            camera.update(player)
+                            mp = 0
+                            s = 0
+                            for i in all_sprites:
+                                i.kill()
+                            *char, level_x, level_y = generate_level_1()
+                            Camera()
+                if r:
+                    player = char[lor]
+                    p += 1
+                    if p <= t // 2: # если игрок должен пойти на снижение после прыжка
+                        player.rect.y -= 9
+                        if pygame.sprite.spritecollideany(player, tiles_group):
+                            player.rect.y += 9
+                    else:
                         player.rect.y += 9
-                else:
+                        if pygame.sprite.spritecollideany(player, tiles_group):
+                            player.rect.y -= 9
+                    if p == t:
+                        p = 0
+                        r = False
+                if not pygame.sprite.spritecollideany(player, plat_group) and not r:
                     player.rect.y += 9
-                    if pygame.sprite.spritecollideany(player, tiles_group):
-                        player.rect.y -= 9
-                if p == t:
-                    p = 0
-                    r = False
-            if not pygame.sprite.spritecollideany(player, plat_group) and not r:
-                player.rect.y += 9
-                try:
-                    if player.rect.y + player.rect.h > int(up()):
-                        player.rect.y -= 9
-                except Exception as ex:
-                    pass
-            if pygame.sprite.spritecollideany(player, money_group):
-                mp += 1
-                mcoin()
+                    try:
+                        if player.rect.y + player.rect.h > int(up()): # проверка на провал в текстуры платформ
+                            player.rect.y -= 9
+                    except Exception as ex:
+                        pass
+                if pygame.sprite.spritecollideany(player, money_group): # если игрок собрал монетку
+                    mp += 1
+                    mcoin()
 
-            if pygame.sprite.spritecollideany(player, man_group):
-                running = False
+                if pygame.sprite.spritecollideany(player, man_group): # если игрок дошел до npc
+                    running = False
 
-            cor = [player.rect.x, player.rect.y]
-            for i in range(3):
-                char[i].rect.x, char[i].rect.y = cor[0], cor[1]
+                cor = [player.rect.x, player.rect.y]
+                for i in range(3):
+                    char[i].rect.x, char[i].rect.y = cor[0], cor[1] # перемещаем все картинки с игроком
 
 
-            # изменяем ракурс камеры
-            if s + XC - player.rect.w // 2 - WIDTH // 2 > 0 and s + WIDTH // 2 + player.rect.w // 2 < WIDTH * 3 - 70:
-                camera.update(player)
-                # обновляем положение всех спрайтов
-                for sprite in all_sprites:
-                    camera.apply(sprite)
+                # изменяем ракурс камеры
+                if s + XC - player.rect.w // 2 - WIDTH // 2 > 0 and s + WIDTH // 2 + player.rect.w // 2 < WIDTH * 3 - 70:
+                    camera.update(player)
+                    # обновляем положение всех спрайтов
+                    for sprite in all_sprites:
+                        camera.apply(sprite)
 
-            screen.fill((0, 0, 0))
-            fon_group.draw(screen)
-            tiles_group.draw(screen)
-            money_group.draw(screen)
-            man_group.draw(screen)
-            if player == char[0]:
-                char_group.draw(screen)
-            elif player == char[1]:
-                charrun_group.draw(screen)
-            else:
-                charrunl_group.draw(screen)
+                screen.fill((0, 0, 0))
+                fon_group.draw(screen)
+                tiles_group.draw(screen)
+                money_group.draw(screen)
+                man_group.draw(screen)
+                if player == char[0]: # показываем только одну картинку с игроком
+                    char_group.draw(screen)
+                elif player == char[1]:
+                    charrun_group.draw(screen)
+                else:
+                    charrunl_group.draw(screen)
 
-            if 60 <= pygame.mouse.get_pos()[0] <= 120 and 60 <= pygame.mouse.get_pos()[1] <= 120:
-                image = pygame.transform.scale(load_image('назад-2.png'), (60, 60))
-                image.set_colorkey((255, 255, 255))
-                screen.blit(image, (60, 60))
-            else:
-                image = pygame.transform.scale(load_image('назад-1.png'), (60, 60))
-                image.set_colorkey((255, 255, 255))
-                screen.blit(image, (60, 60))
+                if 60 <= pygame.mouse.get_pos()[0] <= 120 and 60 <= pygame.mouse.get_pos()[1] <= 120:
+                    # проверяем наведение на экран
+                    image = pygame.transform.scale(load_image('назад-2.png'), (60, 60))
+                    image.set_colorkey((255, 255, 255))
+                    screen.blit(image, (60, 60))
+                else:
+                    image = pygame.transform.scale(load_image('назад-1.png'), (60, 60))
+                    image.set_colorkey((255, 255, 255))
+                    screen.blit(image, (60, 60))
 
-            pygame.display.flip()
-            clock.tick(fps)
-        running = True
-        rep = [(0, "Джей", "*Бубнит какую-то тарабарщину*"), (0, "Пасси", "~Что это с ним?~"),
-               (0, "Пасси", "Что мне делать?", "Окликнуть", "Пройти мимо"), (1, "Пасси", "Папа? Ты в порядке?"),
-               (1, "Джей", "*Вздрогнул*"), (1, "Джей", "Да, Пасси, не беспокойся. Ступай, я догоню."),
-               (2, "Пасси", "*Пожала плечами*"), (0, "Пасси", "*Посмотрела на каменную пирамиду, поросшую мхом*"),
-               (0, "Пасси", "*Вздохнув, стала взбираться по высоким ступеням*")]
-        vb = 0
-        p = [0]
-        while running:
-            for event in pygame.event.get():
-                if len(rep[0]) == 3:
-                    fon_group.draw(screen)
-                    tiles_group.draw(screen)
-                    if rep[0][0] in p:
-                        if rep[0][1] == "Джей":
-                            pers = pygame.transform.scale(load_image('Джей1-2.png'), (WIDTH // 4, HEIGHT // 8 * 6))
-                            pers.set_colorkey((255, 255, 255))
-                            screen.blit(pers, (WIDTH // 3 * 2, HEIGHT // 8 * 2))
+                pygame.display.flip()
+                clock.tick(fps)
+            running = True
+            rep = [(0, "Джей", "*Бубнит какую-то тарабарщину*"), (0, "Пасси", "~Что это с ним?~"),
+                   (0, "Пасси", "Что мне делать?", "Окликнуть", "Пройти мимо"), (1, "Пасси", "Папа? Ты в порядке?"),
+                   (1, "Джей", "*Вздрогнул*"), (1, "Джей", "Да, Пасси, не беспокойся. Ступай, я догоню."),
+                   (2, "Пасси", "*Пожала плечами*"), (0, "Пасси", "*Посмотрела на каменную пирамиду, поросшую мхом*"),
+                   (0, "Пасси", "*Вздохнув, стала взбираться по высоким ступеням*")] # список реплик
+            vb = 0
+            p = [0]
+            while running:
+                for event in pygame.event.get():
+                    if len(rep[0]) == 3: # если не надо будет делать выбор
+                        fon_group.draw(screen)
+                        tiles_group.draw(screen)
+                        if rep[0][0] in p:
+                            if rep[0][1] == "Джей": # если говорит не игрок
+                                pers = pygame.transform.scale(load_image('Джей1-2.png'), (WIDTH // 4, HEIGHT // 8 * 6))
+                                pers.set_colorkey((255, 255, 255))
+                                screen.blit(pers, (WIDTH // 3 * 2, HEIGHT // 8 * 2))
 
-                            pygame.draw.rect(screen, (100, 100, 100), (60, HEIGHT // 3 * 2,
-                                                                       WIDTH // 5 * 3, HEIGHT // 3 - 60))
-                            font = pygame.font.SysFont(None, 50)
-                            string_rendered = font.render(rep[0][-1], 1, pygame.Color('white'))
-                            intro_rect = string_rendered.get_rect()
-                            intro_rect.x = 70
-                            intro_rect.y = HEIGHT // 3 * 2 + 10
-                            intro_rect.w = WIDTH // 5 * 3 - 20
-                            intro_rect.h = HEIGHT // 3 - 80
-                            screen.blit(string_rendered, intro_rect)
-                        elif rep[0][1] == 'Пасси':
-                            pers = pygame.transform.scale(load_image('Пасс1-2.png'), (WIDTH // 4, HEIGHT // 8 * 6))
-                            pers.set_colorkey((255, 255, 255))
-                            screen.blit(pers, (60, HEIGHT // 8 * 2))
-                            pygame.draw.rect(screen, (100, 100, 100), (WIDTH // 4 + 80, HEIGHT // 3 * 2,
-                                                                      WIDTH // 5 * 3, HEIGHT // 3 - 60))
-                            font = pygame.font.SysFont(None, 50)
-                            slov = textwrap.wrap(rep[0][2], (WIDTH // 5 * 3 - 20) * 2.5 // 50, break_long_words=False)
-                            for i in range(len(slov)):
-                                string_rendered = font.render(slov[i], 1, pygame.Color('white'))
+                                pygame.draw.rect(screen, (100, 100, 100), (60, HEIGHT // 3 * 2,
+                                                                           WIDTH // 5 * 3, HEIGHT // 3 - 60))
+                                font = pygame.font.SysFont(None, 50)
+                                string_rendered = font.render(rep[0][-1], 1, pygame.Color('white'))
                                 intro_rect = string_rendered.get_rect()
-                                intro_rect.x = WIDTH // 4 + 80 + 10
-                                intro_rect.y = HEIGHT // 3 * 2 + 10 + 50 * i
+                                intro_rect.x = 70
+                                intro_rect.y = HEIGHT // 3 * 2 + 10
                                 intro_rect.w = WIDTH // 5 * 3 - 20
                                 intro_rect.h = HEIGHT // 3 - 80
                                 screen.blit(string_rendered, intro_rect)
-                    if event.type == pygame.MOUSEBUTTONDOWN:
-                        del rep[0]
-                elif len(rep[0]) > 3:
-                    fon_group.draw(screen)
-                    tiles_group.draw(screen)
-                    pers = pygame.transform.scale(load_image('Пасс1-2.png'), (WIDTH // 4, HEIGHT // 8 * 6))
-                    pers.set_colorkey((255, 255, 255))
-                    screen.blit(pers, (60, HEIGHT // 8 * 2))
-                    pygame.draw.rect(screen, (100, 100, 100), (WIDTH // 4 + 80, HEIGHT // 3 * 2,
-                                                               WIDTH // 5 * 3, HEIGHT // 9 - 30))
-                    font = pygame.font.SysFont(None, 50)
-                    string_rendered = font.render(rep[0][2], 1, pygame.Color('white'))
-                    intro_rect = string_rendered.get_rect()
-                    intro_rect.x = WIDTH // 4 + 80 + 10
-                    intro_rect.y = HEIGHT // 3 * 2 + 10
-                    intro_rect.w = WIDTH // 5 * 3 - 20
-                    intro_rect.h = HEIGHT // 9 - 50
-
-                    screen.blit(string_rendered, intro_rect)
-
-                    if (WIDTH // 4 + 80 < pygame.mouse.get_pos()[0] < WIDTH // 4 + 80 + WIDTH // 5 * 3 and
-                            HEIGHT // 3 * 2 + HEIGHT // 9 - 20 < pygame.mouse.get_pos()[1]
-                            < HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 30):
+                            elif rep[0][1] == 'Пасси': # если игрок
+                                pers = pygame.transform.scale(load_image('Пасс1-2.png'), (WIDTH // 4, HEIGHT // 8 * 6))
+                                pers.set_colorkey((255, 255, 255))
+                                screen.blit(pers, (60, HEIGHT // 8 * 2))
+                                pygame.draw.rect(screen, (100, 100, 100), (WIDTH // 4 + 80, HEIGHT // 3 * 2,
+                                                                           WIDTH // 5 * 3, HEIGHT // 3 - 60))
+                                font = pygame.font.SysFont(None, 50)
+                                slov = textwrap.wrap(rep[0][2], (WIDTH // 5 * 3 - 20) * 2.5 // 50, break_long_words=False)
+                                for i in range(len(slov)):
+                                    string_rendered = font.render(slov[i], 1, pygame.Color('white'))
+                                    intro_rect = string_rendered.get_rect()
+                                    intro_rect.x = WIDTH // 4 + 80 + 10
+                                    intro_rect.y = HEIGHT // 3 * 2 + 10 + 50 * i
+                                    intro_rect.w = WIDTH // 5 * 3 - 20
+                                    intro_rect.h = HEIGHT // 3 - 80
+                                    screen.blit(string_rendered, intro_rect)
+                        if event.type == pygame.MOUSEBUTTONDOWN:
+                            del rep[0]
+                    elif len(rep[0]) > 3: # если будет выбор
+                        fon_group.draw(screen)
+                        tiles_group.draw(screen)
+                        pers = pygame.transform.scale(load_image('Пасс1-2.png'), (WIDTH // 4, HEIGHT // 8 * 6))
+                        pers.set_colorkey((255, 255, 255))
                         screen.blit(pers, (60, HEIGHT // 8 * 2))
-                        pygame.draw.rect(screen, (100, 112, 53), (WIDTH // 4 + 80,
-                                                                  HEIGHT // 3 * 2 + HEIGHT // 9 - 20, WIDTH // 5 * 3,
-                                                                  HEIGHT // 9 - 30))
-                    else:
-                        screen.blit(pers, (60, HEIGHT // 8 * 2))
-                        pygame.draw.rect(screen, (100, 100, 100), (WIDTH // 4 + 80,
-                                                                   HEIGHT // 3 * 2 + HEIGHT // 9 - 20,
+                        pygame.draw.rect(screen, (100, 100, 100), (WIDTH // 4 + 80, HEIGHT // 3 * 2,
                                                                    WIDTH // 5 * 3, HEIGHT // 9 - 30))
-                    font = pygame.font.SysFont(None, 50)
-                    string_rendered = font.render(rep[0][3], 1, pygame.Color('white'))
-                    intro_rect = string_rendered.get_rect()
-                    intro_rect.x = WIDTH // 4 + 80 + 10
-                    intro_rect.y = HEIGHT // 3 * 2 + HEIGHT // 9 - 20 + 10
-                    intro_rect.w = WIDTH // 5 * 3 - 20
-                    intro_rect.h = HEIGHT // 9 - 30
+                        font = pygame.font.SysFont(None, 50)
+                        string_rendered = font.render(rep[0][2], 1, pygame.Color('white'))
+                        intro_rect = string_rendered.get_rect()
+                        intro_rect.x = WIDTH // 4 + 80 + 10
+                        intro_rect.y = HEIGHT // 3 * 2 + 10
+                        intro_rect.w = WIDTH // 5 * 3 - 20
+                        intro_rect.h = HEIGHT // 9 - 50
 
-                    screen.blit(string_rendered, intro_rect)
+                        screen.blit(string_rendered, intro_rect)
 
-                    if (WIDTH // 4 + 80 < pygame.mouse.get_pos()[0] < WIDTH // 4 + 80 + WIDTH // 5 * 3 and
-                            HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 40 < pygame.mouse.get_pos()[1]
-                            < HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 40 + HEIGHT // 9 - 30):
-                        screen.blit(pers, (60, HEIGHT // 8 * 2))
-                        pygame.draw.rect(screen, (100, 112, 53), (WIDTH // 4 + 80,
-                                                                  HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 40,
-                                                                  WIDTH // 5 * 3, HEIGHT // 9 - 30))
-                    else:
-                        screen.blit(pers, (60, HEIGHT // 8 * 2))
-                        pygame.draw.rect(screen, (100, 100, 100), (WIDTH // 4 + 80,
-                                                                   HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 40,
-                                                                   WIDTH // 5 * 3, HEIGHT // 9 - 30))
-                    font = pygame.font.SysFont(None, 50)
-                    string_rendered = font.render(rep[0][4], 1, pygame.Color('white'))
-                    intro_rect = string_rendered.get_rect()
-                    intro_rect.x = WIDTH // 4 + 80 + 10
-                    intro_rect.y = HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 40 + 10
-                    intro_rect.w = WIDTH // 5 * 3 - 20
-                    intro_rect.h = HEIGHT // 9 - 30
-
-                    screen.blit(string_rendered, intro_rect)
-
-                    if (event.type == pygame.MOUSEBUTTONDOWN and
-                            ((WIDTH // 4 + 80 < pygame.mouse.get_pos()[0] < WIDTH // 4 + 80 + WIDTH // 5 * 3 and
-                              HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 40 < pygame.mouse.get_pos()[1]
-                              < HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 40 + HEIGHT // 9 - 30) or
-                             (WIDTH // 4 + 80 < pygame.mouse.get_pos()[0] < WIDTH // 4 + 80 + WIDTH // 5 * 3 and
-                              HEIGHT // 3 * 2 + HEIGHT // 9 - 20 < pygame.mouse.get_pos()[1]
-                              < HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 30))):
-                        del rep[0]
-                        if (HEIGHT // 3 * 2 + HEIGHT // 9 - 20 < pygame.mouse.get_pos()[1]
+                        # настраиваем цвет кнопок в зависимости от наведения
+                        if (WIDTH // 4 + 80 < pygame.mouse.get_pos()[0] < WIDTH // 4 + 80 + WIDTH // 5 * 3 and
+                                HEIGHT // 3 * 2 + HEIGHT // 9 - 20 < pygame.mouse.get_pos()[1]
                                 < HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 30):
-                            p = [0, 1]
+                            screen.blit(pers, (60, HEIGHT // 8 * 2))
+                            pygame.draw.rect(screen, (100, 112, 53), (WIDTH // 4 + 80,
+                                                                      HEIGHT // 3 * 2 + HEIGHT // 9 - 20, WIDTH // 5 * 3,
+                                                                      HEIGHT // 9 - 30))
                         else:
-                            p = [0, 2]
+                            screen.blit(pers, (60, HEIGHT // 8 * 2))
+                            pygame.draw.rect(screen, (100, 100, 100), (WIDTH // 4 + 80,
+                                                                       HEIGHT // 3 * 2 + HEIGHT // 9 - 20,
+                                                                       WIDTH // 5 * 3, HEIGHT // 9 - 30))
+                        font = pygame.font.SysFont(None, 50)
+                        string_rendered = font.render(rep[0][3], 1, pygame.Color('white'))
+                        intro_rect = string_rendered.get_rect()
+                        intro_rect.x = WIDTH // 4 + 80 + 10
+                        intro_rect.y = HEIGHT // 3 * 2 + HEIGHT // 9 - 20 + 10
+                        intro_rect.w = WIDTH // 5 * 3 - 20
+                        intro_rect.h = HEIGHT // 9 - 30
 
-                        while True:
+                        screen.blit(string_rendered, intro_rect)
+
+                        if (WIDTH // 4 + 80 < pygame.mouse.get_pos()[0] < WIDTH // 4 + 80 + WIDTH // 5 * 3 and
+                                HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 40 < pygame.mouse.get_pos()[1]
+                                < HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 40 + HEIGHT // 9 - 30):
+                            screen.blit(pers, (60, HEIGHT // 8 * 2))
+                            pygame.draw.rect(screen, (100, 112, 53), (WIDTH // 4 + 80,
+                                                                      HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 40,
+                                                                      WIDTH // 5 * 3, HEIGHT // 9 - 30))
+                        else:
+                            screen.blit(pers, (60, HEIGHT // 8 * 2))
+                            pygame.draw.rect(screen, (100, 100, 100), (WIDTH // 4 + 80,
+                                                                       HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 40,
+                                                                       WIDTH // 5 * 3, HEIGHT // 9 - 30))
+                        font = pygame.font.SysFont(None, 50)
+                        string_rendered = font.render(rep[0][4], 1, pygame.Color('white'))
+                        intro_rect = string_rendered.get_rect()
+                        intro_rect.x = WIDTH // 4 + 80 + 10
+                        intro_rect.y = HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 40 + 10
+                        intro_rect.w = WIDTH // 5 * 3 - 20
+                        intro_rect.h = HEIGHT // 9 - 30
+
+                        screen.blit(string_rendered, intro_rect)
+
+                        if (event.type == pygame.MOUSEBUTTONDOWN and
+                                ((WIDTH // 4 + 80 < pygame.mouse.get_pos()[0] < WIDTH // 4 + 80 + WIDTH // 5 * 3 and
+                                  HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 40 < pygame.mouse.get_pos()[1]
+                                  < HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 40 + HEIGHT // 9 - 30) or
+                                 (WIDTH // 4 + 80 < pygame.mouse.get_pos()[0] < WIDTH // 4 + 80 + WIDTH // 5 * 3 and
+                                  HEIGHT // 3 * 2 + HEIGHT // 9 - 20 < pygame.mouse.get_pos()[1]
+                                  < HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 30))):
+                            del rep[0]
+                            if (HEIGHT // 3 * 2 + HEIGHT // 9 - 20 < pygame.mouse.get_pos()[1]
+                                    < HEIGHT // 3 * 2 + HEIGHT // 9 * 2 - 30):
+                                p = [0, 1]
+                            else:
+                                p = [0, 2]
+
+                    while True:
+                        if len(rep) > 0:
                             if rep[0][0] in p:
                                 break
                             else:
                                 del rep[0]
+                        else:
+                            running = False
+                            break
 
-                if len(rep) == 0:
-                    running = False
+                    pygame.display.flip()
+                    clock.tick(FPS)
+
+            running = True
+
+            while running:
+                screen.fill((135, 168, 109))
+                pygame.draw.rect(screen, (72, 99, 51), (WIDTH // 4, HEIGHT // 4, WIDTH // 2, HEIGHT // 2))
+                font = pygame.font.SysFont(None, 100)
+                string_rendered = font.render('Уровень пройден!', 1, pygame.Color('white'))
+                intro_rect = string_rendered.get_rect()
+                intro_rect.x = WIDTH // 4 + 20
+                intro_rect.y = HEIGHT // 4 + 20
+                screen.blit(string_rendered, intro_rect)
+
+                font = pygame.font.SysFont(None, 50)
+                string_rendered = font.render(f'+ 5x{mp}', 1, pygame.Color('white'))
+                intro_rect = string_rendered.get_rect()
+                intro_rect.x = WIDTH // 4 + 10
+                intro_rect.y = HEIGHT // 4 + 120
+                screen.blit(string_rendered, intro_rect)
+
+                font = pygame.font.SysFont(None, 50)
+                string_rendered = font.render(f'Итог: + {mp * 5}', 1, pygame.Color('white'))
+                intro_rect = string_rendered.get_rect()
+                intro_rect.x = WIDTH // 4 + 10
+                intro_rect.y = HEIGHT // 4 + 180
+                screen.blit(string_rendered, intro_rect)
+                for event in pygame.event.get():
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        running = False
                 pygame.display.flip()
                 clock.tick(FPS)
 
-        running = True
+            MONEY = MONEY + mp * 5
+            LEVEL = 2
+            with open('data/данные.txt', 'w') as dan:
+                dan.write(f'{LEVEL} {MONEY}')
 
-        while running:
-            for event in pygame.event.get():
-                fon = pygame.transform.scale(load_image('г-ф.png'), (WIDTH, HEIGHT))
-                screen.blit(fon, (0, 0))
-
-                kr = pygame.transform.scale(load_image('г-1.png'), (round(HEIGHT * M), round(HEIGHT * M)))
-                kr.set_colorkey((255, 255, 255))
-                screen.blit(kr, (abs(WIDTH - HEIGHT * M) // 2, abs(HEIGHT - HEIGHT * M) // 2))
-
-                pygame.display.flip()
-                clock.tick(FPS)
-
-        running = True
-        while running:
-            screen.fill((135, 168, 109))
-            pygame.draw.rect(screen, (72, 99, 51), (WIDTH // 4, HEIGHT // 4, WIDTH // 2, HEIGHT // 2))
-            font = pygame.font.SysFont(None, 100)
-            string_rendered = font.render('Уровень пройден!', 1, pygame.Color('white'))
-            intro_rect = string_rendered.get_rect()
-            intro_rect.x = WIDTH // 4 + 20
-            intro_rect.y = HEIGHT // 4 + 20
-            screen.blit(string_rendered, intro_rect)
-
-            font = pygame.font.SysFont(None, 50)
-            string_rendered = font.render(f'+ {mp * 5}', 1, pygame.Color('white'))
-            intro_rect = string_rendered.get_rect()
-            intro_rect.x = WIDTH // 4 + 10
-            intro_rect.y = HEIGHT // 4 + 120
-            screen.blit(string_rendered, intro_rect)
-
-            font = pygame.font.SysFont(None, 50)
-            string_rendered = font.render(f'+ 10', 1, pygame.Color('white'))
-            intro_rect = string_rendered.get_rect()
-            intro_rect.x = WIDTH // 4 + 10
-            intro_rect.y = HEIGHT // 4 + 180
-            screen.blit(string_rendered, intro_rect)
-
-            font = pygame.font.SysFont(None, 50)
-            string_rendered = font.render(f'Итог: + {mp * 5 + 10}', 1, pygame.Color('white'))
-            intro_rect = string_rendered.get_rect()
-            intro_rect.x = WIDTH // 4 + 10
-            intro_rect.y = HEIGHT // 4 + 240
-            screen.blit(string_rendered, intro_rect)
-            for event in pygame.event.get():
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    running = False
-            pygame.display.flip()
-            clock.tick(FPS)
-
-        MONEY = MONEY + mp * 5
-        LEVEL = 2
-        with open('data/данные.txt', 'w') as dan:
-            dan.write(f'{LEVEL} {MONEY}')
-
-        LEVEL += 1
-    zast()
-    pygame.quit()
+            LEVEL += 1
+        else:
+            notll()
+        zast()
+        pygame.quit()
 except:
     print('Error')
